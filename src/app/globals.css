@@ -1,26 +1,407 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:is(.dark, .dark *));
+
+@theme {
+  --font-sans: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-digital: var(--font-jetbrains-mono), "JetBrains Mono", "Cascadia Code", "SF Mono", Consolas, monospace;
+  
+  --color-brand-primary: #064e3b;
+  --color-brand-hover: #04382a;
+  --color-brand-accent: #10b981;
+  --color-brand-light: #ecfdf5;
+  --color-brand-dark: #022c22;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Modern digital audio player numerals - sleek, high-precision, fixed-width */
+.font-digital {
+  font-family: var(--font-jetbrains-mono), "JetBrains Mono", "Cascadia Code", "SF Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.04em;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Crystal-clear text selection: text NEVER blends or hides in light or dark mode */
+::selection {
+  background-color: #064e3b;
+  color: #ffffff;
+}
+
+.dark ::selection {
+  background-color: #059669;
+  color: #ffffff;
+}
+
+/* App-like card soft shadows */
+.app-card {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.dark .app-card {
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35);
+}
+
+.app-card-hover {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.app-card-hover:hover {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
+}
+
+/* Stable button transition - no scale or position shifts */
+.btn-press {
+  transition: background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-press:active {
+  opacity: 0.88;
+}
+
+/* Mobile safe area padding helper */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+
+/* Subtle modern scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Animated gradient background for CTA Banner */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient-banner {
+  background: linear-gradient(-45deg, #064e3b, #043d2e, #012117, #0b5345, #04382a);
+  background-size: 300% 300%;
+  animation: gradientShift 12s ease infinite;
+}
+
+/* Audio card subtle dark shadow (zero green halo spill) */
+.audio-playing-glow {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* Audio Visualizer Bouncing Bars */
+@keyframes barBounce1 {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
+@keyframes barBounce2 {
+  0%, 100% { height: 16px; }
+  50% { height: 6px; }
+}
+@keyframes barBounce3 {
+  0%, 100% { height: 8px; }
+  50% { height: 20px; }
+}
+@keyframes barBounce4 {
+  0%, 100% { height: 17px; }
+  50% { height: 5px; }
+}
+
+.visualizer-bar-1 { animation: barBounce1 0.75s ease-in-out infinite; }
+.visualizer-bar-2 { animation: barBounce2 0.65s ease-in-out infinite 0.15s; }
+.visualizer-bar-3 { animation: barBounce3 0.85s ease-in-out infinite 0.3s; }
+.visualizer-bar-4 { animation: barBounce4 0.7s ease-in-out infinite 0.1s; }
+
+/* Multi-bar audio wave visualizer */
+@keyframes waveAnim1 { 0%, 100% { height: 6px; } 50% { height: 28px; } }
+@keyframes waveAnim2 { 0%, 100% { height: 20px; } 50% { height: 8px; } }
+@keyframes waveAnim3 { 0%, 100% { height: 10px; } 50% { height: 32px; } }
+@keyframes waveAnim4 { 0%, 100% { height: 26px; } 50% { height: 12px; } }
+@keyframes waveAnim5 { 0%, 100% { height: 8px; } 50% { height: 24px; } }
+
+.wave-bar-1 { animation: waveAnim1 0.75s ease-in-out infinite; }
+.wave-bar-2 { animation: waveAnim2 0.85s ease-in-out infinite 0.15s; }
+.wave-bar-3 { animation: waveAnim3 0.65s ease-in-out infinite 0.3s; }
+.wave-bar-4 { animation: waveAnim4 0.95s ease-in-out infinite 0.2s; }
+.wave-bar-5 { animation: waveAnim5 0.7s ease-in-out infinite 0.35s; }
+
+/* Contained scrollbar strictly inside box */
+.contained-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 78, 59, 0.3) transparent;
+}
+.dark .contained-scrollbar {
+  scrollbar-color: rgba(52, 211, 153, 0.3) transparent;
+}
+.contained-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.contained-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 6px 0;
+}
+.contained-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(6, 78, 59, 0.25);
+  border-radius: 9999px;
+}
+.dark .contained-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(52, 211, 153, 0.25);
+}
+
+/* Reactive Audio Visualizer Wave */
+@keyframes visualizerWave {
+  0% {
+    height: 4px;
+    opacity: 0.55;
+  }
+  100% {
+    height: 24px;
+    opacity: 1;
+  }
+}
+
+/* Subtle glowing pulse ring for active play button (NO button scaling) */
+@keyframes audioPulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(52, 211, 153, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+}
+
+.audio-pulse-ring {
+  animation: audioPulseRing 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Gentle undulating flowing motion for CTA architectural wave pattern */
+@keyframes wavePatternFlow {
+  0% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  33% {
+    transform: scale(1.08) translate3d(-1.5%, -1.2%, 0);
+  }
+  66% {
+    transform: scale(1.06) translate3d(1.2%, -0.6%, 0);
+  }
+  100% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+}
+
+.animate-wave-flow {
+  animation: wavePatternFlow 16s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Card ambient pattern slow breathing glow */
+@keyframes ambientGlowPulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.12);
+  }
+}
+
+.ambient-glow-pulse {
+  animation: ambientGlowPulse 8s ease-in-out infinite;
+}
+
+/* Smooth Accordion Wipe-In / Wipe-Out Transition for Lists & Expandable Panels */
+.accordion-wipe-grid {
+  display: grid;
+  transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: grid-template-rows, opacity;
+}
+
+.accordion-wipe-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.accordion-wipe-closed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ==============================================================================
+   HOVER ANIMATED ICON BUTTON (btn-150: Ultra-Compact & 100% Cursor-Aware Fill)
+   ============================================================================== */
+.btn-150-islamic {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content !important;
+  max-width: fit-content !important;
+  flex-shrink: 0;
+  padding: 6.5px 34px 6.5px 18px;
+  border: 1px solid rgba(6, 78, 59, 0.25);
+  font-size: 12px;
+  line-height: 1.4;
+  background-color: #ffffff;
+  border-radius: 9999px;
+  font-weight: 700;
+  color: #064e3b;
+  overflow: hidden;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease, padding 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+:is(.dark .btn-150-islamic) {
+  background-color: #18181b;
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.btn-150-islamic .button-icon {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+  z-index: 2;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.btn-150-islamic .button-icon-left {
+  left: -22px;
+  opacity: 0;
+  color: #ffffff;
+}
+
+.btn-150-islamic .button-icon-right {
+  right: 12px;
+  opacity: 1;
+  color: #064e3b;
+}
+
+:is(.dark .btn-150-islamic) .button-icon-right {
+  color: #34d399;
+}
+
+/* Cursor-Aware Origin Ripple (Expands from the exact cursor coordinate to 100% of button) */
+.btn-150-islamic::before {
+  content: "";
+  position: absolute;
+  top: var(--y, 50%);
+  left: var(--x, 50%);
+  transform: translate(-50%, -50%);
+  width: 0px;
+  height: 0px;
+  background-color: #064e3b;
+  border-radius: 50%;
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+  transition: width 0.65s cubic-bezier(0.23, 1, 0.32, 1),
+              height 0.65s cubic-bezier(0.23, 1, 0.32, 1),
+              opacity 0.25s ease;
+}
+
+:is(.dark .btn-150-islamic)::before {
+  background-color: #047857;
+}
+
+.btn-150-islamic .button-text {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-4px);
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+              color 0.3s ease;
+}
+
+.btn-150-islamic .button-text .pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: #10b981;
+  flex-shrink: 0;
+  transition: background-color 0.3s ease;
+}
+
+/* Hover States: 500px Ripple guaranteed to flood 100% of the button without leaving white gaps */
+.btn-150-islamic:hover,
+.btn-150-islamic:active {
+  padding: 6.5px 18px 6.5px 34px;
+  color: #ffffff !important;
+  border-color: #064e3b;
+  box-shadow: 0 2px 8px rgba(6, 78, 59, 0.25);
+}
+
+:is(.dark .btn-150-islamic):hover,
+:is(.dark .btn-150-islamic):active {
+  color: #ffffff !important;
+  border-color: #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-150-islamic:hover::before,
+.btn-150-islamic:active::before {
+  width: 500px;
+  height: 500px;
+  opacity: 1;
+}
+
+.btn-150-islamic:hover .button-icon-right,
+.btn-150-islamic:active .button-icon-right {
+  right: -22px;
+  opacity: 0;
+}
+
+.btn-150-islamic:hover .button-icon-left,
+.btn-150-islamic:active .button-icon-left {
+  left: 12px;
+  opacity: 1;
+  color: #ffffff;
+}
+
+.btn-150-islamic:hover .button-text,
+.btn-150-islamic:active .button-text {
+  transform: translateX(4px);
+  color: #ffffff !important;
+}
+
+.btn-150-islamic:hover .button-text .pulse-dot,
+.btn-150-islamic:active .button-text .pulse-dot {
+  background-color: #ffffff;
 }
