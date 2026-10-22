@@ -209,7 +209,7 @@ export default function Navbar() {
               <div className="overflow-hidden rounded-2xl shadow-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white/98 dark:bg-zinc-900/98 backdrop-blur-xl">
                 {/* Mini Header */}
                 <div className="px-3.5 pt-3 pb-1 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                     Student Resources
                   </span>
                   <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-800/60">
@@ -260,15 +260,15 @@ export default function Navbar() {
                 </div>
 
                 {/* Footer Banner */}
-                <div className="p-2.5 bg-zinc-50/80 dark:bg-zinc-850/60 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-[11px]">
-                  <span className="text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    100% Free Materials
+                <div className="p-2.5 bg-zinc-50/90 dark:bg-zinc-950/90 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px]">
+                  <span className="text-zinc-600 dark:text-zinc-400 font-medium flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span>100% Free Materials</span>
                   </span>
                   <Link
                     href="/learning-hub"
                     onClick={() => setHubDropdownOpen(false)}
-                    className="font-bold text-[#064e3b] dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+                    className="font-bold text-[#064e3b] dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline inline-flex items-center gap-1 transition-colors"
                   >
                     <span>View Library</span>
                     <ArrowRight className="w-3 h-3" />
