@@ -122,7 +122,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Navigation Links - Modern Minimal Pill Dock */}
-        <nav className="hidden lg:flex items-center gap-0.5 p-1 bg-zinc-100/80 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/80 rounded-full shadow-2xs backdrop-blur-md">
+        <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 p-1.5 bg-zinc-100/80 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/80 rounded-full shadow-2xs backdrop-blur-md">
           {/* 1. Home */}
           <Link
             href="/"
