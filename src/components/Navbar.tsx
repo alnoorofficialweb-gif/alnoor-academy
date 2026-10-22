@@ -94,13 +94,13 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200/80 dark:border-zinc-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Brand Logo - Light Mode: Image Logo | Dark Mode: Text Branding */}
+        {/* Brand Logo - Dark Mode & Light Mode Image Logos */}
         <Link
           href="/"
           className="flex items-center shrink-0 py-1 transition-opacity hover:opacity-90 focus:outline-hidden"
           aria-label="AL-Noor Academy Home"
         >
-          {/* Light Mode Only */}
+          {/* Light Mode Logo */}
           <Image
             src="/images/logo-light.png"
             alt="AL-Noor Academy"
@@ -110,15 +110,15 @@ export default function Navbar() {
             className="h-8 sm:h-9 w-auto object-contain dark:hidden"
           />
 
-          {/* Dark Mode (Logo not displayed in dark mode) */}
-          <div className="hidden dark:flex flex-col group shrink-0">
-            <span className="font-extrabold text-base tracking-tight text-zinc-50 leading-tight">
-              AL-Noor <span className="text-emerald-400">Academy</span>
-            </span>
-            <span className="text-[10px] text-zinc-400 font-medium tracking-wide">
-              Online Quran &amp; Islamic Studies
-            </span>
-          </div>
+          {/* Dark Mode Logo */}
+          <Image
+            src="/images/logo-dark.png"
+            alt="AL-Noor Academy"
+            width={132}
+            height={44}
+            priority
+            className="h-8 sm:h-9 w-auto object-contain hidden dark:block"
+          />
         </Link>
 
         {/* Desktop Navigation Links - Modern Minimal Pill Dock */}
