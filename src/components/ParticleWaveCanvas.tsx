@@ -31,11 +31,22 @@ export default function ParticleWaveCanvas({
 
     const handleResize = () => {
       if (!canvas.parentElement) return;
-      width = canvas.width = canvas.parentElement.clientWidth;
-      height = canvas.height = canvas.parentElement.clientHeight;
+      const newWidth = canvas.parentElement.clientWidth;
+      const newHeight = canvas.parentElement.clientHeight;
+      if (newWidth > 0 && newHeight > 0) {
+        width = canvas.width = newWidth;
+        height = canvas.height = newHeight;
+      }
     };
 
     window.addEventListener("resize", handleResize);
+
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    if (canvas.parentElement) {
+      resizeObserver.observe(canvas.parentElement);
+    }
 
     // Increased particle count (richer stardust field)
     const DUST_COUNT = 85;
@@ -144,6 +155,7 @@ export default function ParticleWaveCanvas({
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", handleResize);
       observer.disconnect();
+      resizeObserver.disconnect();
     };
   }, []);
 

@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import CustomDropdown, { DropdownOption } from "@/components/CustomDropdown";
-import { Mail, MessageSquare, Send, CheckCircle2, Phone, Clock, MapPin } from "lucide-react";
+import { Mail, MessageSquare, Send, CheckCircle2, Phone, Clock, MapPin, Loader2 } from "lucide-react";
+import { contactMessageAction } from "@/app/actions/forms";
 
 const INQUIRY_TOPICS: DropdownOption[] = [
   { value: "Class Inquiry", label: "Class Inquiry & Trial Details" },
@@ -14,6 +15,9 @@ const INQUIRY_TOPICS: DropdownOption[] = [
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,9 +25,30 @@ export default function ContactPage() {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const res = await contactMessageAction({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+      });
+
+      if (!res.success) {
+        setErrorMessage(res.error || "Unable to send message. Please try again.");
+      } else {
+        setSubmitted(true);
+      }
+    } catch (err: unknown) {
+      console.error("Submission exception:", err);
+      setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -100,6 +125,11 @@ export default function ContactPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {errorMessage && (
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 text-xs text-red-700 dark:text-red-300">
+                    {errorMessage}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Name */}
                   <div className="space-y-1">
@@ -155,10 +185,20 @@ export default function ContactPage() {
                 {/* Submit button */}
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#064e3b] hover:bg-[#04382a] dark:bg-emerald-600 dark:hover:bg-emerald-700 shadow-xs transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#064e3b] hover:bg-[#04382a] dark:bg-emerald-600 dark:hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Send Message to Admissions</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending Message...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send Message to Admissions</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}

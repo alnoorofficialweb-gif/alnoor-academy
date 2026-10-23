@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { CustomDropdown, DropdownOption } from "@/components/CustomDropdown";
 import CountrySelect from "@/components/CountrySelect";
+import { enrollStudentAction, validateStudentSignupEmailAction } from "@/app/actions/forms";
 import { supabase } from "@/lib/supabase";
 
 const COURSE_OPTIONS: DropdownOption[] = [
@@ -57,6 +58,7 @@ function SignUpFormContent() {
   const searchParams = useSearchParams();
   const courseParam = searchParams.get("course");
   const classParam = searchParams.get("class");
+  const teacherParam = searchParams.get("teacher");
 
   const initialKey = courseParam || classParam || "";
   const matchedProgram = initialKey ? PROGRAM_TITLES[initialKey] : null;
@@ -92,38 +94,75 @@ function SignUpFormContent() {
       (applicantType === "parent" && !childName.trim()) ||
       !email.trim() ||
       !whatsappNumber.trim() ||
-      !residentialCountry.trim()
+      !residentialCountry.trim() ||
+      !password.trim()
     ) {
-      setErrorMessage("Please fill out all required fields.");
+      setErrorMessage("Please fill out all required fields, including account password.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long.");
       return;
     }
 
     setIsSubmitting(true);
     try {
       const selectedProgramName = PROGRAM_TITLES[course]?.title || course;
-      const { error } = await supabase.from("subscription_requests").insert([
-        {
-          full_name: name.trim(),
-          applicant_type: applicantType,
-          student_name: applicantType === "parent" ? childName.trim() : name.trim(),
-          email: email.trim(),
-          whatsapp_number: whatsappNumber.trim(),
-          residential_country: residentialCountry.trim(),
-          city: city.trim() ? `${city.trim()}, ${residentialCountry.trim()}` : residentialCountry.trim(),
-          what_to_learn: selectedProgramName,
-          preferred_time_slot: "Flexible",
-          preferred_duration: "30 minutes",
-          status: "pending",
-        },
-      ]);
+      const studentFullName = applicantType === "parent" ? childName.trim() : name.trim();
+      const parentFullName = applicantType === "parent" ? name.trim() : null;
 
-      if (error) {
-        console.error("Supabase trial registration error:", error);
+      // Pre-validation: prevent duplicate student signup or teacher email collision
+      const validation = await validateStudentSignupEmailAction(email.trim());
+      if (!validation.allowed) {
+        setErrorMessage(validation.error || "This email cannot be used for registration.");
+        setIsSubmitting(false);
+        return;
       }
+
+      // 1. Create real Supabase user in auth.users
+      const { error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            full_name: studentFullName,
+            parent_name: parentFullName,
+            role: "student",
+            selected_course: selectedProgramName,
+            preferred_language: language,
+            whatsapp: whatsappNumber.trim(),
+            country: residentialCountry.trim(),
+            city: city.trim() || null,
+          },
+        },
+      });
+
+      if (authError) {
+        setErrorMessage(authError.message || "Failed to create Supabase account.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. Also populate the custom students table
+      await enrollStudentAction({
+        fullName: studentFullName,
+        parentName: parentFullName,
+        email: email.trim(),
+        whatsapp: whatsappNumber.trim(),
+        country: residentialCountry.trim(),
+        city: city.trim() || null,
+        selectedCourse: selectedProgramName,
+        preferredLanguage: language,
+        scheduledTime: "Flexible",
+        duration: "30 minutes",
+        teacherName: teacherParam || null,
+      });
+
       setSubmitted(true);
     } catch (err: unknown) {
       console.error("Submission exception:", err);
-      setSubmitted(true);
+      setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -201,17 +240,25 @@ function SignUpFormContent() {
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <p className="text-sm font-bold text-zinc-900 dark:text-white">
-              Trial Registration Received!
+              Account Created &amp; Trial Registered!
             </p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
-              JazakAllah Khair <span className="font-semibold text-zinc-800 dark:text-zinc-200">{name}</span>. Your 3-day free trial application for{" "}
+              JazakAllah Khair <span className="font-semibold text-zinc-800 dark:text-zinc-200">{name}</span>. Your student account has been created and your 3-day free trial application for{" "}
               <span className="font-bold text-[#064e3b] dark:text-emerald-400">
                 {PROGRAM_TITLES[course]?.title || course}
               </span>{" "}
               has been recorded.
             </p>
 
+            <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 max-w-sm mx-auto leading-relaxed">
+              Please check your email to verify your address, or sign in now with your email and password to access your student portal.
+            </div>
+
             <div className="p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl border border-zinc-200/70 dark:border-zinc-700/60 text-left text-xs space-y-1.5 max-w-sm mx-auto">
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Account Email:</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{email}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">WhatsApp:</span>
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{whatsappNumber}</span>
@@ -220,23 +267,20 @@ function SignUpFormContent() {
                 <span className="text-zinc-400">Residential Country:</span>
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{residentialCountry}</span>
               </div>
-              {city && (
-                <div className="flex justify-between">
-                  <span className="text-zinc-400">City / Town:</span>
-                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{city}</span>
-                </div>
-              )}
             </div>
 
-            <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-              Our academic coordinator will contact you directly on WhatsApp to confirm your teacher match and schedule.
-            </p>
-
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+              <Link
+                href="/login?role=student"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#064e3b] hover:bg-[#04382a] dark:bg-emerald-600 dark:hover:bg-emerald-700 transition-colors"
+              >
+                <span>Sign In to Dashboard</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
               <button
                 type="button"
                 onClick={() => setSubmitted(false)}
-                className="text-xs font-semibold text-[#064e3b] dark:text-emerald-400 hover:underline cursor-pointer"
+                className="text-xs font-semibold text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:underline cursor-pointer"
               >
                 Register another student
               </button>

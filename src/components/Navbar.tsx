@@ -13,16 +13,76 @@ import {
   GraduationCap,
   Headphones,
   HelpCircle,
+  LayoutDashboard,
+  LogOut,
+  User,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import AnimatedProgramButton from "@/components/AnimatedProgramButton";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import type { User as SupabaseUser, AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hubDropdownOpen, setHubDropdownOpen] = useState(false);
   const [mobileHubOpen, setMobileHubOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
+  const [userRole, setUserRole] = useState<string>("student");
   const hubDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Subscribe to Supabase Auth state reactively
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+
+    // Initial session retrieval
+    supabase.auth.getUser().then(({ data }: { data: { user: SupabaseUser | null } }) => {
+      if (data?.user) {
+        setCurrentUser(data.user);
+        const role = (data.user.user_metadata?.role as string) || "student";
+        setUserRole(role);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    // Real-time listener for login/logout across pages & tabs
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        if (session?.user) {
+          setCurrentUser(session.user);
+          const role = (session.user.user_metadata?.role as string) || "student";
+          setUserRole(role);
+        } else {
+          setCurrentUser(null);
+          setUserRole("student");
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      const supabase = getSupabaseBrowserClient();
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      setUserRole("student");
+      window.location.href = "/login";
+    } catch (err) {
+      console.error("Sign out error:", err);
+    }
+  };
+
+  const portalHref =
+    userRole === "teacher"
+      ? "/teacher"
+      : userRole === "admin"
+      ? "/admin"
+      : "/dashboard";
 
   // Close dropdown on click outside or Escape
   useEffect(() => {
@@ -306,28 +366,65 @@ export default function Navbar() {
         {/* Right CTA Actions */}
         <div className="hidden sm:flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            href="/login"
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            Sign In
-          </Link>
-          <AnimatedProgramButton
-            href="/signup"
-            label="Start Free Trial"
-            className="shadow-xs"
-          />
+          {currentUser ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href={portalHref}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  isActive(portalHref)
+                    ? "bg-[#064e3b] text-white shadow-xs font-bold"
+                    : "bg-emerald-50 dark:bg-emerald-950/60 text-[#064e3b] dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
+                }`}
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
+              </Link>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                title="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden md:inline text-[11px]">Logout</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                Sign In
+              </Link>
+              <AnimatedProgramButton
+                href="/signup"
+                label="Start Free Trial"
+                className="shadow-xs"
+              />
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Toggle Button */}
         <div className="flex lg:hidden items-center gap-2">
           <ThemeToggle />
-          <Link
-            href="/signup"
-            className="sm:hidden px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#064e3b] shadow-xs"
-          >
-            Trial
-          </Link>
+          {currentUser ? (
+            <Link
+              href={portalHref}
+              className="sm:hidden px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#064e3b] shadow-xs inline-flex items-center gap-1"
+            >
+              <LayoutDashboard className="w-3 h-3" />
+              <span>Portal</span>
+            </Link>
+          ) : (
+            <Link
+              href="/signup"
+              className="sm:hidden px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#064e3b] shadow-xs"
+            >
+              Trial
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -503,20 +600,46 @@ export default function Navbar() {
 
             {/* Auth Actions in Drawer */}
             <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-white bg-[#064e3b] hover:bg-[#04382a] transition-colors"
-              >
-                Start Free Trial
-              </Link>
+              {currentUser ? (
+                <>
+                  <Link
+                    href={portalHref}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-white bg-[#064e3b] hover:bg-[#04382a] transition-colors inline-flex items-center justify-center gap-1.5"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>My Dashboard</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleSignOut();
+                    }}
+                    className="px-3.5 py-2 rounded-lg text-xs font-semibold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors inline-flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Logout</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 text-center py-2 rounded-lg text-xs font-semibold text-white bg-[#064e3b] hover:bg-[#04382a] transition-colors"
+                  >
+                    Start Free Trial
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

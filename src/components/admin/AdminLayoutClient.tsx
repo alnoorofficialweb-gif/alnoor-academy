@@ -16,6 +16,10 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  Calendar,
+  CreditCard,
+  Bell,
+  BarChart3,
 } from "lucide-react";
 import { adminLogoutAction } from "@/app/admin/actions";
 
@@ -49,6 +53,10 @@ export default function AdminLayoutClient({
       badge: teacherCount,
     },
     { name: "Courses", href: "/admin/courses", icon: BookOpen },
+    { name: "Schedule", href: "/admin/schedule", icon: Calendar },
+    { name: "Payments", href: "/admin/payments", icon: CreditCard },
+    { name: "Notifications", href: "/admin/notifications", icon: Bell },
+    { name: "Reports", href: "/admin/reports", icon: BarChart3 },
     { name: "Learning Hub", href: "/admin/learning-hub", icon: Compass },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import CourseCard, { CourseData } from "@/components/CourseCard";
 import { BookOpen, Search, ArrowRight } from "lucide-react";
 import ParticleWaveCanvas from "@/components/ParticleWaveCanvas";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 const ALL_COURSES: CourseData[] = [
   {
@@ -88,10 +89,49 @@ const ALL_COURSES: CourseData[] = [
 ];
 
 export default function CoursesPage() {
+  const [courses, setCourses] = useState<CourseData[]>(ALL_COURSES);
   const [selectedLevel, setSelectedLevel] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredCourses = ALL_COURSES.filter((course) => {
+  useEffect(() => {
+    async function loadLiveCourses() {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          interface LiveCourse {
+            slug: string;
+            title: string;
+            level?: string;
+            duration?: string;
+            lessons?: number;
+            description?: string;
+            highlights?: string[];
+          }
+          const mapped: CourseData[] = (data as LiveCourse[]).map((c: LiveCourse) => ({
+            id: c.slug,
+            title: c.title,
+            level: (c.level === "Intermediate" || c.level === "Advanced") ? c.level : "Beginner",
+            duration: c.duration || "30 mins / day",
+            lessons: c.lessons || 24,
+            description: c.description || "",
+            highlights: c.highlights || [],
+          }));
+          setCourses(mapped);
+        }
+      } catch (err) {
+        console.error("Error loading live courses from Supabase:", err);
+      }
+    }
+    loadLiveCourses();
+  }, []);
+
+  const filteredCourses = courses.filter((course) => {
     const matchesLevel =
       selectedLevel === "All" || course.level === selectedLevel;
     const matchesSearch =

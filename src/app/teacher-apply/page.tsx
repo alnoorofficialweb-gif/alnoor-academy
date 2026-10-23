@@ -2,9 +2,23 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { GraduationCap, Send, CheckCircle2, ArrowLeft, ShieldCheck, BookOpen } from "lucide-react";
+import {
+  GraduationCap,
+  Send,
+  CheckCircle2,
+  ArrowLeft,
+  ShieldCheck,
+  BookOpen,
+  Loader2,
+  UploadCloud,
+  FileText,
+  Image as ImageIcon,
+  X,
+  Paperclip,
+} from "lucide-react";
 import { CustomDropdown, DropdownOption } from "@/components/CustomDropdown";
 import CountrySelect from "@/components/CountrySelect";
+import { teacherApplyAction, validateTeacherApplyEmailAction } from "@/app/actions/forms";
 
 const SPECIALIZATION_OPTIONS: DropdownOption[] = [
   { value: "Quran Tajweed & Recitation", label: "Tajweed & Recitation" },
@@ -31,6 +45,9 @@ const EXPERIENCE_OPTIONS: DropdownOption[] = [
 
 export default function TeacherApplyPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -43,9 +60,83 @@ export default function TeacherApplyPage() {
     qualifications: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [cvFile, setCvFile] = useState<{ name: string; size: string; dataUrl: string } | null>(null);
+  const [photoFile, setPhotoFile] = useState<{ name: string; size: string; dataUrl: string } | null>(null);
+
+  const handleCvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB limit.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCvFile({
+        name: file.name,
+        size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
+        dataUrl: reader.result as string,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size exceeds 5MB limit.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotoFile({
+        name: file.name,
+        size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
+        dataUrl: reader.result as string,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      // Pre-validation: prevent student email collision or duplicate teacher application
+      const validation = await validateTeacherApplyEmailAction(formData.email);
+      if (!validation.allowed) {
+        setErrorMessage(validation.error || "This email cannot be used for a teacher application.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const res = await teacherApplyAction({
+        fullName: formData.name,
+        email: formData.email,
+        whatsapp: formData.phone,
+        country: formData.residentialCountry,
+        city: formData.city || null,
+        specialization: formData.specialization,
+        experience: formData.experience,
+        sanadDetails: formData.qualifications,
+        cvUrl: cvFile ? cvFile.dataUrl : null,
+        photoUrl: photoFile ? photoFile.dataUrl : null,
+      });
+
+      if (!res.success) {
+        setErrorMessage(res.error || "Unable to submit application. Please try again.");
+      } else {
+        setSubmitted(true);
+      }
+    } catch (err: unknown) {
+      console.error("Submission exception:", err);
+      setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,6 +189,11 @@ export default function TeacherApplyPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {errorMessage && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 text-xs text-red-700 dark:text-red-300">
+                {errorMessage}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Full Name */}
               <div>
@@ -227,13 +323,108 @@ export default function TeacherApplyPage() {
               />
             </div>
 
+            {/* Upload CV / Resume & Profile Photo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              {/* CV / Resume Upload */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Upload CV / Resume (Optional)
+                </label>
+                {cvFile ? (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="w-4 h-4 text-[#064e3b] dark:text-emerald-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-[11px]">
+                          {cvFile.name}
+                        </p>
+                        <p className="text-[10px] text-zinc-500">{cvFile.size}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCvFile(null)}
+                      className="p-1 text-zinc-400 hover:text-red-600 rounded-md"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-[#064e3b] dark:hover:border-emerald-500 bg-zinc-50/50 dark:bg-zinc-800/40 cursor-pointer transition-colors group">
+                    <UploadCloud className="w-5 h-5 text-zinc-400 group-hover:text-[#064e3b] dark:group-hover:text-emerald-400 mb-1" />
+                    <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                      Click to upload CV
+                    </span>
+                    <span className="text-[10px] text-zinc-400">PDF, DOCX up to 5MB</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleCvChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Profile Photo / Sanad Document Upload */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Profile Photo / Sanad Document (Optional)
+                </label>
+                {photoFile ? (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ImageIcon className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-[11px]">
+                          {photoFile.name}
+                        </p>
+                        <p className="text-[10px] text-zinc-500">{photoFile.size}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoFile(null)}
+                      className="p-1 text-zinc-400 hover:text-red-600 rounded-md"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-teal-600 dark:hover:border-teal-400 bg-zinc-50/50 dark:bg-zinc-800/40 cursor-pointer transition-colors group">
+                    <UploadCloud className="w-5 h-5 text-zinc-400 group-hover:text-teal-600 dark:group-hover:text-teal-400 mb-1" />
+                    <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                      Click to upload Photo / Sanad
+                    </span>
+                    <span className="text-[10px] text-zinc-400">JPG, PNG, PDF up to 5MB</span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#064e3b] hover:bg-[#04382a] dark:bg-emerald-600 dark:hover:bg-emerald-700 shadow-xs transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#064e3b] hover:bg-[#04382a] dark:bg-emerald-600 dark:hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
               >
-                <span>Submit Faculty Application</span>
-                <Send className="w-3.5 h-3.5" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Submitting Application...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Submit Faculty Application</span>
+                    <Send className="w-3.5 h-3.5" />
+                  </>
+                )}
               </button>
             </div>
           </form>

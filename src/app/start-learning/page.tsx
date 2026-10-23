@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   User,
   Users,
@@ -27,7 +28,7 @@ import {
 import ParticleWaveCanvas from "@/components/ParticleWaveCanvas";
 import CustomDropdown, { DropdownOption } from "@/components/CustomDropdown";
 import CountrySelect from "@/components/CountrySelect";
-import { supabase } from "@/lib/supabase";
+import { enrollStudentAction } from "@/app/actions/forms";
 
 interface ClassOption {
   id: string;
@@ -105,7 +106,12 @@ const DURATION_OPTIONS: DropdownOption[] = [
   { value: "60 minutes", label: "60 minutes / day" },
 ];
 
-export default function StartLearningPage() {
+function StartLearningContent() {
+  const searchParams = useSearchParams();
+  const courseParam = searchParams.get("course");
+  const classParam = searchParams.get("class");
+  const teacherParam = searchParams.get("teacher");
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeClassTitle, setActiveClassTitle] = useState<string>("Quran Reading Class");
 
@@ -125,6 +131,25 @@ export default function StartLearningPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Pre-selection logic: if course or class query param is present, select it
+  useEffect(() => {
+    const target = courseParam || classParam;
+    if (target) {
+      const match = CLASSES_LIST.find(
+        (c) =>
+          c.id.toLowerCase() === target.toLowerCase() ||
+          c.value.toLowerCase().includes(target.toLowerCase())
+      );
+      if (match) {
+        setActiveClassTitle(match.title);
+        setFormData((prev) => ({
+          ...prev,
+          whatToLearn: match.value,
+        }));
+      }
+    }
+  }, [courseParam, classParam]);
 
   // Close modal on Escape key & lock body scroll
   useEffect(() => {
@@ -180,31 +205,26 @@ export default function StartLearningPage() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from("subscription_requests").insert([
-        {
-          full_name: formData.fullName.trim(),
-          applicant_type: formData.applicantType,
-          student_name:
-            formData.applicantType === "parent"
-              ? formData.studentName.trim()
-              : formData.fullName.trim(),
-          email: formData.email.trim(),
-          whatsapp_number: formData.whatsappNumber.trim(),
-          city: formData.city.trim()
-            ? `${formData.city.trim()}, ${formData.residentialCountry.trim()}`
-            : formData.residentialCountry.trim(),
-          residential_country: formData.residentialCountry.trim(),
-          what_to_learn: formData.whatToLearn,
-          preferred_time_slot: formData.preferredTimeSlot,
-          preferred_duration: formData.preferredDuration,
-          status: "pending",
-        },
-      ]);
+      const res = await enrollStudentAction({
+        fullName:
+          formData.applicantType === "parent"
+            ? formData.studentName.trim()
+            : formData.fullName.trim(),
+        parentName:
+          formData.applicantType === "parent" ? formData.fullName.trim() : null,
+        email: formData.email.trim(),
+        whatsapp: formData.whatsappNumber.trim(),
+        country: formData.residentialCountry.trim(),
+        city: formData.city.trim() || null,
+        selectedCourse: formData.whatToLearn,
+        scheduledTime: formData.preferredTimeSlot,
+        duration: formData.preferredDuration,
+        teacherName: teacherParam || null,
+      });
 
-      if (error) {
-        console.error("Supabase insert error:", error);
+      if (!res.success) {
         setErrorMessage(
-          error.message ||
+          res.error ||
             "Unable to submit request. Please try again or contact support."
         );
       } else {
@@ -416,7 +436,7 @@ export default function StartLearningPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-5 sm:p-8 shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200"
+            className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl border-0 shadow-2xl shadow-black/40 p-5 sm:p-8 my-auto animate-in fade-in zoom-in-95 duration-200"
           >
             {/* Modal Header & Close Button */}
             <div className="flex items-start justify-between pb-3.5 border-b border-zinc-100 dark:border-zinc-800">
@@ -785,5 +805,13 @@ export default function StartLearningPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function StartLearningPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen py-20 text-center text-xs text-zinc-500">Loading learning tracks...</div>}>
+      <StartLearningContent />
+    </Suspense>
   );
 }

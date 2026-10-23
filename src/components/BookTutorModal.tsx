@@ -19,7 +19,7 @@ import {
 import { TeacherData } from "@/components/TeacherCard";
 import CustomDropdown, { DropdownOption } from "@/components/CustomDropdown";
 import CountrySelect from "@/components/CountrySelect";
-import { supabase } from "@/lib/supabase";
+import { enrollStudentAction } from "@/app/actions/forms";
 
 interface BookTutorModalProps {
   teacher: TeacherData | null;
@@ -111,30 +111,25 @@ export default function BookTutorModal({
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from("tutor_bookings").insert([
-        {
-          teacher_id: teacher.id,
-          teacher_name: teacher.name,
-          applicant_type: applicantType,
-          applicant_name: applicantName.trim(),
-          student_name:
-            applicantType === "parent" ? studentName.trim() : applicantName.trim(),
-          email: email.trim(),
-          whatsapp_number: whatsappNumber.trim(),
-          city: city.trim() ? `${city.trim()}, ${residentialCountry.trim()}` : residentialCountry.trim(),
-          residential_country: residentialCountry.trim(),
-          learning_goal: learningGoal,
-          preferred_time_slot: preferredTimeSlot,
-          preferred_duration: preferredDuration,
-          notes: notes.trim(),
-          status: "pending",
-        },
-      ]);
+      const res = await enrollStudentAction({
+        fullName:
+          applicantType === "parent" ? studentName.trim() : applicantName.trim(),
+        parentName: applicantType === "parent" ? applicantName.trim() : null,
+        email: email.trim(),
+        whatsapp: whatsappNumber.trim(),
+        country: residentialCountry.trim(),
+        city: city.trim() || null,
+        selectedCourse: learningGoal,
+        scheduledTime: preferredTimeSlot,
+        duration: preferredDuration,
+        teacherId: teacher.id,
+        teacherName: teacher.name,
+        notes: notes.trim() || null,
+      });
 
-      if (error) {
-        console.error("Supabase tutor booking error:", error);
+      if (!res.success) {
         setErrorMessage(
-          error.message ||
+          res.error ||
             "Unable to submit tutor request. Please try again or contact support."
         );
       } else {
@@ -176,7 +171,7 @@ export default function BookTutorModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-5 sm:p-7 shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200 space-y-4"
+        className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl border-0 shadow-2xl shadow-black/40 p-5 sm:p-7 my-auto animate-in fade-in zoom-in-95 duration-200 space-y-4"
       >
         {/* Top Header & Close Button */}
         <div className="flex items-start justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">

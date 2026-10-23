@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   HelpCircle,
@@ -14,8 +14,11 @@ import {
   BookOpen,
   MessageSquare,
   Search,
+  Loader2,
 } from "lucide-react";
 import { CustomDropdown, DropdownOption } from "@/components/CustomDropdown";
+import { scholarQuestionAction } from "@/app/actions/forms";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 interface AnsweredQuestion {
   id: number;
@@ -95,16 +98,84 @@ export default function AskSheikhPage() {
   const [questionText, setQuestionText] = useState("");
   const [allowPublic, setAllowPublic] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [expandedId, setExpandedId] = useState<number | null>(1);
   const [searchFilter, setSearchFilter] = useState("");
+  const [answersList, setAnswersList] = useState<AnsweredQuestion[]>(RECENT_ANSWERS);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function loadLiveAnswers() {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from("scholar_questions")
+          .select("*")
+          .eq("is_public", true)
+          .not("answer", "is", null)
+          .order("created_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          interface LiveQ {
+            id: string;
+            topic?: string;
+            question: string;
+            answer?: string;
+            created_at: string;
+          }
+          const liveMapped: AnsweredQuestion[] = (data as LiveQ[])
+            .filter((q: LiveQ) => Boolean(q.answer && q.answer.trim().length > 0))
+            .map((q: LiveQ, idx: number) => ({
+              id: 1000 + idx,
+              category: q.topic || "General Islamic Questions",
+              question: q.question,
+              date: new Date(q.created_at).toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              }),
+              answeredBy: "Al-Noor Academic Scholar Board",
+              scholarTitle: "Faculty of Shariah & Quranic Sciences",
+              answer: q.answer || "",
+            }));
+          setAnswersList([...liveMapped, ...RECENT_ANSWERS]);
+        }
+      } catch (err) {
+        console.error("Error fetching live scholar answers:", err);
+      }
+    }
+    loadLiveAnswers();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const res = await scholarQuestionAction({
+        name,
+        email,
+        topic: category,
+        question: questionText,
+        isPublic: allowPublic,
+      });
+
+      if (!res.success) {
+        setErrorMessage(res.error || "Unable to submit question. Please try again.");
+      } else {
+        setSubmitted(true);
+      }
+    } catch (err: unknown) {
+      console.error("Submission exception:", err);
+      setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const filteredAnswers = RECENT_ANSWERS.filter(
+  const filteredAnswers = answersList.filter(
     (item) =>
       item.question.toLowerCase().includes(searchFilter.toLowerCase()) ||
       item.category.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -156,6 +227,11 @@ export default function AskSheikhPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
+            {errorMessage && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 text-xs text-red-700 dark:text-red-300">
+                {errorMessage}
+              </div>
+            )}
             <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
               <MessageSquare className="w-4 h-4 text-[#064e3b] dark:text-emerald-400" />
               <h2 className="text-sm font-bold text-zinc-900 dark:text-white">
@@ -246,10 +322,20 @@ export default function AskSheikhPage() {
 
               <button
                 type="submit"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#064e3b] hover:bg-[#043327] dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white text-xs font-semibold transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#064e3b] hover:bg-[#043327] dark:bg-emerald-600 dark:hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold transition-colors cursor-pointer"
               >
-                <span>Send Question to Sheikh</span>
-                <Send className="w-3.5 h-3.5" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Submitting Question...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Send Question to Sheikh</span>
+                    <Send className="w-3.5 h-3.5" />
+                  </>
+                )}
               </button>
             </div>
           </form>
