@@ -1740,12 +1740,12 @@ export default function StudentsManagerClient({
 
         return (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setViewingProfileStudent(null)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-6xl h-[92vh] md:h-[min(88vh,860px)] flex flex-col md:flex-row bg-white rounded-3xl overflow-hidden shadow-[0_32px_80px_-24px_rgba(0,0,0,0.45)] animate-in zoom-in-95 duration-200"
+              className="relative w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[min(88vh,860px)] flex flex-col md:flex-row bg-white rounded-none sm:rounded-3xl overflow-hidden shadow-[0_32px_80px_-24px_rgba(0,0,0,0.45)] animate-in zoom-in-95 duration-200"
             >
               {/* Subtle live data loading bar */}
               {isLoadingProfile && (
@@ -1760,11 +1760,11 @@ export default function StudentsManagerClient({
               <aside className="shrink-0 w-full md:w-64 lg:w-72 bg-gradient-to-b from-[#031d17] via-[#021812] to-[#010e0a] text-white relative overflow-hidden">
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-56 h-56 bg-emerald-500/10 blur-3xl pointer-events-none rounded-full" />
 
-                <div className="relative z-10 flex flex-col h-full p-4 md:p-6">
+                <div className="relative z-10 flex flex-col h-full px-4 pt-4 pb-3 md:p-6">
                   {/* Identity */}
-                  <div className="flex md:flex-col items-center gap-4 md:gap-0 md:text-center">
+                  <div className="flex md:flex-col items-center gap-3.5 md:gap-0 md:text-center">
                     <div className="relative shrink-0">
-                      <div className="w-14 h-14 md:w-24 md:h-24 rounded-full overflow-hidden bg-emerald-950/70 flex items-center justify-center ring-4 ring-emerald-400/20 shadow-lg shadow-black/30">
+                      <div className="w-12 h-12 md:w-24 md:h-24 rounded-full overflow-hidden bg-emerald-950/70 flex items-center justify-center ring-4 ring-emerald-400/20 shadow-lg shadow-black/30">
                         {s.avatar_url ? (
                           <img src={s.avatar_url} alt={fullName} className="w-full h-full object-cover" />
                         ) : (
@@ -1773,18 +1773,20 @@ export default function StudentsManagerClient({
                           </span>
                         )}
                       </div>
-                      <span className="absolute bottom-0.5 right-0.5 md:bottom-1 md:right-1.5 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-[3px] ring-[#031d17]" />
+                      <span className="absolute bottom-0 right-0 md:bottom-1 md:right-1.5 w-3 h-3 md:w-3.5 md:h-3.5 rounded-full bg-emerald-500 ring-[3px] ring-[#031d17]" />
                     </div>
 
-                    <div className="min-w-0 md:mt-4">
-                      <h3 className="text-lg md:text-xl font-semibold tracking-tight truncate">{fullName}</h3>
-                      <p className="text-xs text-emerald-200/70 mt-0.5">
-                        Age {age} · {gender}
-                      </p>
-                      <span className="inline-flex items-center gap-1.5 mt-2.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-400/10 text-emerald-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </span>
+                    <div className="min-w-0 flex-1 md:flex-none md:mt-4">
+                      <h3 className="text-base md:text-xl font-semibold tracking-tight truncate">{fullName}</h3>
+                      <div className="flex md:flex-col items-center gap-2 md:gap-0 mt-0.5">
+                        <p className="text-xs text-emerald-200/70">
+                          Age {age} · {gender}
+                        </p>
+                        <span className="inline-flex items-center gap-1.5 md:mt-2.5 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full text-[10px] md:text-[11px] font-semibold bg-emerald-400/10 text-emerald-300">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -1810,7 +1812,7 @@ export default function StudentsManagerClient({
                   </div>
 
                   {/* Navigation Tabs */}
-                  <nav className="flex md:flex-col gap-1 mt-4 md:mt-6 overflow-x-auto md:overflow-visible -mx-1 px-1 pb-1 md:pb-0">
+                  <nav className="grid grid-cols-5 md:flex md:flex-col gap-1 mt-3.5 md:mt-6">
                     {[
                       { key: "overview", label: "Overview", icon: Home },
                       { key: "progress", label: "Progress", icon: BarChart2 },
@@ -1826,14 +1828,14 @@ export default function StudentsManagerClient({
                           id={`profile-tab-${tab.key}`}
                           type="button"
                           onClick={() => setProfileActiveTab(tab.key as typeof profileActiveTab)}
-                          className={`shrink-0 md:w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all cursor-pointer ${
+                          className={`min-w-0 md:w-full flex flex-col md:flex-row items-center gap-1 md:gap-3 px-1 md:px-3.5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-[13px] tracking-tight md:tracking-normal transition-all cursor-pointer ${
                             isActive
                               ? "bg-blue-600 text-white font-semibold shadow-lg shadow-blue-950/40"
                               : "text-emerald-100/70 font-medium hover:text-white hover:bg-white/[0.06]"
                           }`}
                         >
-                          <Icon className="w-4 h-4 shrink-0" />
-                          <span>{tab.label}</span>
+                          <Icon className="w-[18px] h-[18px] md:w-4 md:h-4 shrink-0" />
+                          <span className="max-w-full truncate leading-tight">{tab.label}</span>
                         </button>
                       );
                     })}
@@ -1846,9 +1848,9 @@ export default function StudentsManagerClient({
               {/* ============================================================== */}
               <div className="flex-1 min-w-0 min-h-0 flex flex-col bg-[#f6f7f9]">
                 {/* Sticky Header */}
-                <header className="shrink-0 z-10 flex items-center justify-between gap-3 px-5 sm:px-7 py-4 bg-white shadow-[0_1px_0_rgba(16,24,40,0.06)]">
+                <header className="shrink-0 z-10 flex items-center justify-between gap-3 px-4 sm:px-7 py-3 sm:py-4 bg-white shadow-[0_1px_0_rgba(16,24,40,0.06)]">
                   <div className="min-w-0">
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 tracking-tight leading-7">Student Profile</h2>
+                    <h2 className="text-base sm:text-xl font-semibold text-gray-900 tracking-tight leading-6 sm:leading-7">Student Profile</h2>
                     <p className="text-xs text-gray-500 leading-4">{TAB_LABELS[profileActiveTab]}</p>
                   </div>
 
@@ -1890,7 +1892,7 @@ export default function StudentsManagerClient({
                 </header>
 
                 {/* Scrollable Body (remounts per tab → resets scroll) */}
-                <div key={profileActiveTab} className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-7 py-6 animate-in fade-in duration-200">
+                <div key={profileActiveTab} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-7 py-4 sm:py-6 animate-in fade-in duration-200">
                   {/* ======================= OVERVIEW ======================= */}
                   {profileActiveTab === "overview" && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -2197,7 +2199,7 @@ export default function StudentsManagerClient({
                 </div>
 
                 {/* Sticky Footer */}
-                <footer className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-1.5 px-5 sm:px-7 py-3 bg-white shadow-[0_-1px_0_rgba(16,24,40,0.06)] text-xs">
+                <footer className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-1 px-4 sm:px-7 py-2.5 sm:py-3 bg-white shadow-[0_-1px_0_rgba(16,24,40,0.06)] text-[11px] sm:text-xs">
                   <div className="flex items-center gap-2">
                     <Shield className="w-3.5 h-3.5 text-[#064e3b]" />
                     <span className="font-semibold text-gray-700 tabular-nums">#{studentIdDisplay}</span>
